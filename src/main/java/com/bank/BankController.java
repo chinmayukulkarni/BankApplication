@@ -1,12 +1,8 @@
 package com.bank;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Scanner;
-import java.util.StringTokenizer;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,11 +11,30 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.bank.service.BankInterface;
+
 @RestController
 @RequestMapping("/")
 public class BankController {
 	ArrayList<Customer> myCustomerArrayList = new ArrayList<Customer>();
 	int customerCounter = 0;
+	// Things to learn
+	// Dependency Injection -- Spring StereoTypes
+	// rewrite the code for PUT and POST
+	// Create another class called as Database.
+	// Migrate the array handling in Database class
+	// Logic: 
+	// write the methods to read and write from text file
+	// Call the methods of Database class from Service class for all 4 methods (PUT, POST, DELETE, GET) where reading and writing is necessary
+	
+	// Call
+	// Old way
+	//BankInterfaceImpl bnkImpl = new BankInterfaceImpl();
+	// New way
+	@Autowired
+	BankInterface bnkImpl;
+	
+	
 	// Scanner sc1 = new Scanner(System.in);
 
 	// public void readFile_version2() throws IOException {
@@ -70,128 +85,45 @@ public class BankController {
 	 * https://spring.io/guides/gs/rest-service/
 	 */
 
+	/**
+	 * 
+	 * REST- Controller --> Service --> Database Layer (Outside call)
+	 * 
+	 * Controller = Input, validate input, parse input, exception and error
+	 * handling, Http response. Service = Business logic DAL (Database Access
+	 * Layer) = Database connectivity (connection and datasource), database
+	 * calls
+	 * 
+	 */
+	// TODO: Method getUser javadoc is missing
 	@GetMapping
 	public ArrayList<Customer> getUser(@RequestParam(value = "acno", required = false) String acno) {// Welcome
 
-		if (acno == null) {
-
-			// I returned arraylist in delete method to returmn allaccount
-			// records
-
+		if (acno == null)
 			return myCustomerArrayList;
 
-		}
-
 		String leftTrimedacno = validateGetUser(acno);
 
-		if (leftTrimedacno == null) {
+		if (leftTrimedacno == null)
 			throw new RuntimeException("Account number received is not valid. Please provide correct account number");
-		}
 
-		try {
-			for (int i = 0; i < myCustomerArrayList.size(); i++) {
-				if (myCustomerArrayList.get(i).getCustomerAccno().equals(leftTrimedacno)) {
-					ArrayList<Customer> returnList = new ArrayList<>();
-					returnList.add(myCustomerArrayList.get(i));
-					return returnList;
+		// Call service, pass account number and get customer list.
 
-					/*
-					 * return "The Account Number" + leftTrimedacno +
-					 * " Has Following Data:  \n \nName: " +
-					 * myCustomerArrayList.get(i).getCustomerName() + "\nDob: "
-					 * + myCustomerArrayList.get(i).getCustomerDOB() +
-					 * "\nAddress: " +
-					 * myCustomerArrayList.get(i).getCustomerAddress() +
-					 * "\nAdhar: " +
-					 * myCustomerArrayList.get(i).getCustomerAdhar() +
-					 * "\nMoney: " + myCustomerArrayList.get(i).getMoney() +
-					 * "\nMobileNumber: " +
-					 * myCustomerArrayList.get(i).getMobNo();
-					 */
-
-				}
-
-			}
-
-			throw new RuntimeException("Account Not Present in Database or deleted from database");
-		} catch (Exception e) {
-			throw new RuntimeException("Account Not Present in Database or deleted from database");
-		}
-	}
-
-	// @GetMapping
-	public ArrayList<String> getUserString(@RequestParam(value = "acno", required = false) String acno) {// Welcome
-
-		if (acno == null) {
-
-			// I returned arraylist in delete method to returmn allaccount
-			// records
-
-			ArrayList<String> returnList = new ArrayList<>();
-			for (int i = 0; i < myCustomerArrayList.size(); i++) {
-				returnList.add(reformatCustomer(myCustomerArrayList.get(i)));
-			}
-			return returnList;
-
-		}
-
-		String leftTrimedacno = validateGetUser(acno);
-
-		if (leftTrimedacno == null) {
-			throw new RuntimeException("Account number received is not valid. Please provide correct account number");
-		}
-
-		try {
-			for (int i = 0; i < myCustomerArrayList.size(); i++) {
-				if (myCustomerArrayList.get(i).getCustomerAccno().equals(leftTrimedacno)) {
-
-					ArrayList<String> returnArrayList = new ArrayList<>();
-					String customerString = reformatCustomer(myCustomerArrayList.get(i));
-					returnArrayList.add(customerString);
-					return returnArrayList;
-					/*
-					 * return "The Account Number" + leftTrimedacno +
-					 * " Has Following Data:  \n \nName: " +
-					 * myCustomerArrayList.get(i).getCustomerName() + "\nDob: "
-					 * + myCustomerArrayList.get(i).getCustomerDOB() +
-					 * "\nAddress: " +
-					 * myCustomerArrayList.get(i).getCustomerAddress() +
-					 * "\nAdhar: " +
-					 * myCustomerArrayList.get(i).getCustomerAdhar() +
-					 * "\nMoney: " + myCustomerArrayList.get(i).getMoney() +
-					 * "\nMobileNumber: " +
-					 * myCustomerArrayList.get(i).getMobNo();
-					 */
-
-				}
-
-			}
-
-			throw new RuntimeException("Account Not Present in Database or deleted from database");
-		} catch (Exception e) {
-			throw new RuntimeException("Account Not Present in Database or deleted from database");
-		}
-	}
-
-	private String reformatCustomer(Customer customer) {
-		return "The Account Number" + customer.getCustomerAccno() + " Has Following Data:  Name: "
-				+ customer.getCustomerName() + "Dob: " + customer.getCustomerDOB() + "Address: "
-				+ customer.getCustomerAddress() + "Adhar: " + customer.getCustomerAdhar() + "Money: "
-				+ customer.getMoney() + "MobileNumber: " + customer.getMobNo();
+		ArrayList<Customer> returnList = bnkImpl.getCustomerDetails(leftTrimedacno, myCustomerArrayList);
+		return returnList;
 
 	}
 
+	// TODO: Method validateGetUser javadoc is missing
 	private String validateGetUser(String acno) {
 		String rightTrimedacno = acno.trim();
 		String leftTrimedacno = rightTrimedacno.replaceAll("^\\s+", "");
 
-		if (!leftTrimedacno.startsWith("SNGURB")) {
+		if (!leftTrimedacno.startsWith("SNGURB"))
 			return null;
-		}
 
-		// check if the account number is present in database
-		// return the account number if present
-		// return null otherwise
+		// check if the account number is present in database return the account
+		// number if present return null otherwise
 		String validatedAcno = checkIfAccountNumberIsPresent(leftTrimedacno);
 		return validatedAcno;
 	}
@@ -210,14 +142,14 @@ public class BankController {
 
 			// Check if the account number is valid and matches with the
 			// customer Number
-			if ((myCustomerArrayList.get(i).isFlag()) && (acno.equals(myCustomerArrayList.get(i).getCustomerAccno()))) {
+			if ((myCustomerArrayList.get(i).isFlag()) && (acno.equals(myCustomerArrayList.get(i).getCustomerAccno())))
 				return acno;
-			}
 		}
 		return null;
 	}
 
 	@PostMapping
+	// TODO: Method createAccount javadoc is missing
 	public Customer createAccount(@RequestParam(value = "name") String name, @RequestParam(value = "dob") String dob,
 			@RequestParam(value = "address") String address, @RequestParam(value = "adhar") String adhar,
 			@RequestParam(value = "money") String money, @RequestParam(value = "mobNo") String mobNo) {
@@ -229,7 +161,6 @@ public class BankController {
 			cs.setCustomerAccno(customerAccountNumber);
 			cs.setCustomerDOB(dob);
 			cs.setCustomerAddress(address);
-			// cs.setCustomerPAN(pan);
 			cs.setCustomerAdhar(adhar);
 			cs.setMoney(money);
 			cs.setFlag(true);
@@ -240,20 +171,6 @@ public class BankController {
 
 			return cs;
 
-			/*
-			 * return cs.getCustomerAccno() + cs.getCustomerName() +
-			 * cs.getCustomerDOB() + cs.getCustomerAddress() +
-			 * cs.getCustomerAdhar() + cs.getMoney() + cs.getMobNo();
-			 */
-			/*
-			 * return "The Account Number" + cs.getCustomerAccno() +
-			 * " has been created with Following Data:  \nName: " +
-			 * cs.getCustomerName() + "\nDob: " + cs.getCustomerDOB() +
-			 * "\nAddress: " + cs.getCustomerAddress() + "\nAdhar: " +
-			 * cs.getCustomerAdhar() + "\nMoney: " + cs.getMoney() +
-			 * "\nMobileNumber: " + cs.getMobNo() + " \n\tSuccessfully";
-			 */
-
 		} catch (ArithmeticException e) {
 			System.out.println("Warning: ArithmeticException");
 		} catch (ArrayIndexOutOfBoundsException e) {
@@ -262,14 +179,11 @@ public class BankController {
 			System.out.println("Warning: Some Other exception");
 		}
 		System.out.println("Out of try-catch block...");
-		// return customerAccountNumber;
-		// return "Post account executed";
-
 		return null;
 	}
 
 	@PutMapping
-
+	// TODO: Method updateAccount javadoc is missing
 	public Customer updateAccount(@RequestParam(value = "acno") String acno, @RequestParam(value = "name") String name,
 			@RequestParam(value = "dob") String dob, @RequestParam(value = "address") String address,
 			@RequestParam(value = "adhar") String adhar, @RequestParam(value = "mobNo") String mobNo) {
@@ -284,57 +198,23 @@ public class BankController {
 						cust.setCustomerName(name);
 						cust.setCustomerDOB(dob);
 						cust.setCustomerAddress(address);
-						// cust.setCustomerPAN(pan);
 						cust.setCustomerAdhar(adhar);
 						cust.setMobNo(mobNo);
 						return myCustomerArrayList.get(i);
-						/*
-						 * "The Account Number" + acno +
-						 * " Has been Updated With following   \nName: " + name
-						 * + "\nDob: " + dob + "\nAddress: " + address +
-						 * "\nAdhar: " + adhar + "\nMobileNumber: " + mobNo +
-						 * " \n\tSuccessfully";
-						 */
-
 					}
 				}
 			}
 			throw new RuntimeException("Account Not Present in Database or deleted from database");
-			// return "Account Not Present in Database or deleted from
-			// database";
 		} catch (Exception e) {
-
 			throw new RuntimeException("Account Not Present in Database or deleted from database");
-			// return "error in updating account" + e;
 		}
 	}
 
+	// TODO: Method deleteAccount javadoc is missing
 	@DeleteMapping
 	public Customer deleteAccount(@RequestParam(value = "delcust") String delcust) {
-		try {
-			for (int i = 0; i < myCustomerArrayList.size(); i++) {
-				if (myCustomerArrayList.get(i).isFlag()) {
-					while (delcust.equals(myCustomerArrayList.get(i).getCustomerAccno())) {
-
-						if (myCustomerArrayList.get(i).getCustomerAccno().equals(delcust)) {
-
-							myCustomerArrayList.get(i).setFlag(false);
-
-							return myCustomerArrayList.get(i);
-							// "The Account number :- " + delcust + " has been
-							// Deleted Successfully";
-						}
-					}
-				}
-			}
-			throw new RuntimeException("Account Not Present in Database or deleted from database");
-			// return "Account Not Present in Database or deleted from
-			// database";
-
-		} catch (Exception e) {
-			throw new RuntimeException("Account Not Present in Database or deleted from database");
-			// return "Enter Correct Account number";
-		}
+		Customer deleteAccount= bnkImpl.deleteAccount(delcust, myCustomerArrayList);
+		return deleteAccount;
 	}
 
 }
